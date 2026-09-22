@@ -19,9 +19,13 @@ const cutoffInput = document.getElementById('cutoff-time');
 let currentRows = [];
 
 function timeToMinutes(hhmm) {
-  const m = /^(\d{1,2}):(\d{2})$/.exec((hhmm || '').trim());
+  const raw = (hhmm || '').trim();
+  // Accepts "12:04", "12.04", "1204", "9:05", "905"
+  let m = /^(\d{1,2})[:.]?(\d{2})$/.exec(raw);
   if (!m) return null;
-  return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+  const h = parseInt(m[1], 10), min = parseInt(m[2], 10);
+  if (h > 23 || min > 59) return null;
+  return h * 60 + min;
 }
 
 function codeLabel(hhmm) {

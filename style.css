@@ -179,7 +179,7 @@ button:active { transform: scale(0.98); }
   font-size: 0.85rem;
   color: var(--muted);
 }
-.cutoff-row input[type="time"] {
+.cutoff-row input {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
