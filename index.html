@@ -16,7 +16,6 @@
 <nav id="tabs">
   <button class="tab-btn active" data-tab="extractor">Checkout Extractor</button>
   <button class="tab-btn" data-tab="dueouts">Due-Outs</button>
-  <button class="tab-btn" data-tab="refunds">Refund / Rebate Log</button>
 </nav>
 
 <main>
@@ -46,16 +45,38 @@
     </div>
   </section>
 
-  <!-- DUE-OUTS (stub) -->
+  <!-- DUE-OUTS -->
   <section id="dueouts" class="tab-panel">
     <h2>Due-Outs</h2>
-    <p class="hint">Coming next — import your Opera due-out export (.xls) to get a building-sorted, code-filtered list ready for Concierge, plus balance/VCC flags.</p>
-  </section>
+    <p class="hint">Import the Opera due-out export (the .xls file). Gives you the Concierge physical-check list (building-sorted, excludes 12:05 "left" and 12:06 "extension"), plus balance flags.</p>
 
-  <!-- REFUNDS (stub) -->
-  <section id="refunds" class="tab-panel">
-    <h2>Refund / Rebate Log</h2>
-    <p class="hint">Coming soon — a simple tracker for refunds and rebates with running totals.</p>
+    <label id="file-label" for="dueout-file">Choose due-out export file</label>
+    <input type="file" id="dueout-file" accept=".xls,.xlsx,.htm,.html,.csv">
+
+    <div id="dueout-status" class="status" style="display:none;"></div>
+
+    <div id="dueout-results" style="display:none;">
+
+      <div class="section-block">
+        <h3>Concierge check list <span class="count-badge" id="concierge-count"></span></h3>
+        <p class="hint">Rooms with ETD at or before 12:04 (excludes 12:05 left / 12:06 extension) — ready to send, grouped by building.</p>
+        <textarea id="concierge-list" readonly></textarea>
+        <button id="copy-concierge-btn">Copy list</button>
+      </div>
+
+      <div class="section-block">
+        <h3>Balance flags <span class="count-badge" id="balance-count"></span></h3>
+        <p class="hint">Non-zero balances on due-outs. Type (VCC / city ledger / high balance) isn't in this export, so review each — this just flags who to check.</p>
+        <div id="balance-list"></div>
+      </div>
+
+      <div class="section-block">
+        <h3>Full due-out list <span class="count-badge" id="full-count"></span></h3>
+        <div id="excluded-note" class="hint"></div>
+        <div id="full-table-wrap"><table id="full-table"></table></div>
+      </div>
+
+    </div>
   </section>
 
 </main>
@@ -66,5 +87,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="script.js"></script>
+<script src="dueouts.js"></script>
 </body>
 </html>

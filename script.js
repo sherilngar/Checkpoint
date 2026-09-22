@@ -26,7 +26,7 @@ let lastRawMatches = []; // room numbers in first-seen order, with duplicates
 
 // Room number: 4 digits, followed (allowing a little whitespace) by "co", "c.o", "check out", or "checkout"
 // Word-boundary-ish on the left so we don't grab the tail end of a longer number/timestamp.
-const CHECKOUT_REGEX = /(?<![0-9])(\d{4})\s*(?:c\s*\/?\s*o\b|check\s*-?\s*out\b|checkout\b)/gi;
+const CHECKOUT_REGEX = /(?<![0-9])(\d{4})\s*(?:c\s*\/?\s*o\b|check\s*-?\s*out\b|checkout\b|vacant\b)/gi;
 
 function extractRooms(text) {
   const matches = [];
