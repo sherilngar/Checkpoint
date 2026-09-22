@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Checkpoint</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛎️</text></svg>">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Checkpoint</h1>
+  <p class="tagline">Rooms Controller toolkit</p>
+</header>
+
+<nav id="tabs">
+  <button class="tab-btn active" data-tab="extractor">Checkout Extractor</button>
+  <button class="tab-btn" data-tab="dueouts">Due-Outs</button>
+  <button class="tab-btn" data-tab="refunds">Refund / Rebate Log</button>
+</nav>
+
+<main>
+
+  <!-- CHECKOUT EXTRACTOR -->
+  <section id="extractor" class="tab-panel active">
+    <h2>Checkout Extractor</h2>
+    <p class="hint">Paste a screenshot (Ctrl+V) or copied text from WhatsApp. Room numbers followed by "co", "check out" or "checkout" are pulled out automatically.</p>
+
+    <div id="dropzone" tabindex="0">
+      <span id="dropzone-label">Click here, then paste (Ctrl+V) a screenshot or text</span>
+      <img id="preview-img" style="display:none;">
+    </div>
+
+    <div id="ocr-status" class="status" style="display:none;"></div>
+
+    <textarea id="raw-text-input" placeholder="…or paste/type raw text here instead"></textarea>
+    <button id="extract-text-btn">Extract from text above</button>
+
+    <div id="results" style="display:none;">
+      <h3>Extracted rooms</h3>
+      <label class="checkbox-row"><input type="checkbox" id="dedupe-toggle" checked> Remove duplicates</label>
+      <div id="room-count"></div>
+      <textarea id="opera-format" readonly></textarea>
+      <button id="copy-btn">Copy to clipboard</button>
+      <div id="raw-matches"></div>
+    </div>
+  </section>
+
+  <!-- DUE-OUTS (stub) -->
+  <section id="dueouts" class="tab-panel">
+    <h2>Due-Outs</h2>
+    <p class="hint">Coming next — import your Opera due-out export (.xls) to get a building-sorted, code-filtered list ready for Concierge, plus balance/VCC flags.</p>
+  </section>
+
+  <!-- REFUNDS (stub) -->
+  <section id="refunds" class="tab-panel">
+    <h2>Refund / Rebate Log</h2>
+    <p class="hint">Coming soon — a simple tracker for refunds and rebates with running totals.</p>
+  </section>
+
+</main>
+
+<footer>
+  <p>Personal tool · runs entirely in your browser · nothing is uploaded anywhere</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
