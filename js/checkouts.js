@@ -201,6 +201,15 @@
     }));
   }
 
+  CP.resetCheckouts = () => {
+    last = null; setStatus('');
+    $('ex-preview').hidden = true;
+    $('ex-drop-inner').classList.remove('compact');
+    $('ex-text').value = '';
+    CP.update(s => { s.co = { reported: {}, processed: {} }; });
+    CP.toast('Checkouts reset');
+  };
+
   CP.renderCheckouts = render;
   document.addEventListener('DOMContentLoaded', bind);
 })(window.CP);

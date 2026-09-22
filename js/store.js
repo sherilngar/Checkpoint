@@ -16,7 +16,7 @@ window.CP = window.CP || {};
     co: { reported: {}, processed: {} }, // room -> timestamp
     tags: {},               // conf/room -> balance tag
     cards: [],              // waiting cards
-    recheckAt: null,
+    checks: [],             // timestamps of every due-out import today
     theme: null
   });
 

@@ -1,170 +1,79 @@
 (function (CP) {
   const $ = (id) => document.getElementById(id);
-  const VIEWS = ['today', 'departures', 'checkouts', 'waiting', 'tools'];
-  let current = 'today';
+  const VIEWS = ['departures', 'checkouts', 'waiting', 'tools'];
+  let current = 'departures';
 
-  // ---------- shift rhythm ----------
-  const PHASES = [
-    { at: '09:00', title: 'Departure balances', does: 'Clear VCC, city ledger and refund cases on today\'s due-outs.' },
-    { at: '10:00', title: 'Arrivals and early check-ins', does: 'Waiting cards, room swaps, rooms on Q for housekeeping.' },
-    { at: '11:30', title: 'Departure calls', does: 'Operators log departure codes 12:01 to 12:06.' },
-    { at: '12:00', title: 'Physical checks', does: 'Import due-outs, send Concierge the list, repeat every 30 minutes.' },
-    { at: '14:30', title: 'Lunch', does: 'Half an hour. The re-check timer keeps running.' },
-    { at: '15:00', title: 'Q rooms and email', does: 'Tell guests their rooms are ready, clear urgent email.' },
-    { at: '16:00', title: 'Tomorrow\'s allocation', does: 'Go through tomorrow\'s arrivals one by one.' }
-  ];
-  const SHIFT_END = '18:00';
+  // ---------- header actions per tab ----------
+  const ACTIONS = {
+    departures: [
+      { id: 'import', label: 'Import export', primary: true },
+      { id: 'reset-dep', label: 'Reset departures' }
+    ],
+    checkouts: [
+      { id: 'reset-co', label: 'Reset checkouts' }
+    ],
+    waiting: [],
+    tools: []
+  };
 
-  function phaseNow() {
-    const now = CP.nowMinutes();
-    const start = CP.toMinutes(PHASES[0].at), end = CP.toMinutes(SHIFT_END);
-    if (now < start) return { idx: -1, label: `Shift starts at ${PHASES[0].at}` };
-    if (now >= end) return { idx: PHASES.length, label: 'Shift over' };
-    let idx = 0;
-    PHASES.forEach((p, i) => { if (now >= CP.toMinutes(p.at)) idx = i; });
-    const next = PHASES[idx + 1] ? PHASES[idx + 1].at : SHIFT_END;
-    const left = CP.toMinutes(next) - now;
-    return { idx, label: `${PHASES[idx].title}, ${CP.fmtDur(left)} left` };
+  function renderActions() {
+    $('view-actions').innerHTML = (ACTIONS[current] || []).map(a =>
+      `<button class="btn ${a.primary ? 'primary' : ''}" data-action="${a.id}" type="button">${a.label}</button>`).join('');
   }
 
   // ---------- routing ----------
-  function go(view, opts) {
-    if (!VIEWS.includes(view)) view = 'today';
+  function go(view) {
+    if (!VIEWS.includes(view)) view = 'departures';
     current = view;
     VIEWS.forEach(v => { $('view-' + v).hidden = v !== view; });
-    document.querySelectorAll('[data-view]').forEach(b => {
+    document.querySelectorAll('.nav-btn[data-view]').forEach(b => {
       if (b.dataset.view === view) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
     });
     $('view-title').textContent = $('view-' + view).dataset.title;
     if (location.hash !== '#' + view) history.replaceState(null, '', '#' + view);
-    if (!opts || !opts.keepScroll) window.scrollTo(0, 0);
+    renderActions();
+    window.scrollTo(0, 0);
   }
   CP.go = go;
   CP.currentView = () => current;
 
-  // ---------- today ----------
-  function stats(s) {
-    const rows = CP.dep.activeRows(s);
-    const st = rows.map(r => CP.roomStatus(r, s));
-    const bal = rows.filter(r => CP.parseBalance(r.balance) !== 0);
-    const active = s.cards.filter(c => c.status !== 'done');
-    return {
-      loaded: !!s.dueouts,
-      check: st.filter(x => x === 'check').length,
-      cleared: st.filter(x => x === 'co' || x === 'left').length,
-      ext: st.filter(x => x === 'ext').length,
-      total: rows.length,
-      unprocessed: CP.unprocessedCheckouts(),
-      balTodo: bal.filter(r => !s.tags[CP.dep.tagKey(r)]),
-      waiting: active.filter(c => c.status === 'waiting'),
-      onQ: active.filter(c => c.status === 'q'),
-      ready: active.filter(c => c.status === 'ready'),
-      longest: active.length ? Math.max(...active.map(CP.cardWaitMins)) : 0
-    };
-  }
-
-  function renderToday() {
-    const s = CP.state();
-    const k = stats(s);
-    const bs = s.dueouts ? CP.dep.buildingStats(s) : null;
-
-    const cell = (n, label, note, view, tone) => `
-      <button class="bcell ${tone || ''}" data-go="${view}" type="button">
-        <span class="bnum">${n}</span>
-        <span class="blabel">${label}</span>
-        <span class="bnote">${note}</span>
-      </button>`;
-
-    const bldNote = bs ? CP.BUILDINGS.map(b => `${b.name} ${bs[b.name].check}`).join(', ') : 'Import the due-out export';
-    $('board').innerHTML = `
-      <div class="board-grid">
-        ${cell(k.loaded ? k.check : '–', 'Rooms to check', bldNote, 'departures', k.check ? 'lit' : '')}
-        ${cell(k.loaded ? `${k.cleared}<small>/${k.total}</small>` : '–', 'Departures cleared', k.loaded ? (k.ext ? CP.plural(k.ext, 'extension') : 'No extensions') : 'No export yet', 'departures')}
-        ${cell(k.unprocessed.length, 'To check out in Opera', k.unprocessed.length ? 'Reported by Concierge, not processed' : 'Log is clear', 'checkouts', k.unprocessed.length ? 'lit' : '')}
-        ${cell(k.waiting.length + k.onQ.length, 'Guests waiting', k.longest ? `Longest wait ${CP.fmtDur(k.longest)}` : 'No waiting cards', 'waiting', k.longest >= 60 ? 'hot' : '')}
-        ${cell(k.ready.length, 'Ready, not told', k.ready.length ? 'Send to the Q group' : 'Nobody to call', 'waiting', k.ready.length ? 'lit' : '')}
-      </div>`;
-
-    // needs attention
-    const items = [];
-    const now = Date.now();
-    if (s.recheckAt && now >= s.recheckAt && k.check) {
-      items.push({ tone: 'hot', text: `Departure re-check is due. ${CP.plural(k.check, 'room')} still on the Concierge list.`, act: 'import', label: 'Import new export' });
-    }
-    if (!s.dueouts && CP.nowMinutes() >= CP.toMinutes('11:30')) {
-      items.push({ tone: 'warm', text: 'No due-out export imported yet today.', act: 'import', label: 'Import export' });
-    }
-    k.ready.forEach(c => items.push({ tone: 'warm', text: `${c.room} is ready for ${c.name}. Guest not told yet.`, act: 'go:waiting', label: 'Open card' }));
-    s.cards.filter(c => c.status !== 'done' && CP.cardWaitMins(c) >= 30).sort((a, b) => CP.cardWaitMins(b) - CP.cardWaitMins(a)).forEach(c => {
-      const m = CP.cardWaitMins(c);
-      items.push({ tone: m >= 60 ? 'hot' : 'warm', text: `${c.name} has waited ${CP.fmtDur(m)}${c.room ? ' for ' + c.room : ' with no room yet'}.`, act: 'go:waiting', label: 'Open card' });
-    });
-    s.cards.filter(c => c.status === 'q' || c.status === 'waiting').forEach(c => {
-      const n = CP.cardRoomNote(c, s);
-      if (n && n.kind === 'alert') items.push({ tone: 'warm', text: `${c.name} in ${c.room}: ${n.text.toLowerCase()}.`, act: 'go:waiting', label: 'Change room' });
-    });
-    if (k.unprocessed.length) items.push({ tone: '', text: `${CP.plural(k.unprocessed.length, 'reported checkout')} waiting to be processed in Opera.`, act: 'copy-unprocessed', label: 'Copy Opera list' });
-    if (k.balTodo.length) items.push({ tone: '', text: `${CP.plural(k.balTodo.length, 'departure')} with a balance nobody has tagged yet.`, act: 'go:departures', label: 'Review' });
-
-    $('feed').innerHTML = items.length
-      ? items.slice(0, 9).map((it, i) => `<li class="feed-item ${it.tone}"><p>${CP.esc(it.text)}</p><button class="btn small" data-act="${it.act}" type="button">${it.label}</button></li>`).join('')
-      : `<li class="feed-empty">Nothing is waiting on you. New issues show up here as they happen.</li>`;
-
-    const ph = phaseNow();
-    $('rhythm').innerHTML = PHASES.map((p, i) => `
-      <li class="${i < ph.idx ? 'past' : i === ph.idx ? 'now' : ''}">
-        <time>${p.at}</time>
-        <div><strong>${p.title}</strong><span>${p.does}</span></div>
-      </li>`).join('') + `<li class="${ph.idx >= PHASES.length ? 'now' : ''}"><time>${SHIFT_END}</time><div><strong>Shift ends</strong></div></li>`;
-  }
-
-  // ---------- topbar ----------
-  function renderTop() {
-    const s = CP.state();
-    const d = new Date();
-    $('clock').innerHTML = `<span class="clock-time">${CP.nowHHMM()}</span><span class="clock-date">${d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</span>`;
-    $('phase').textContent = phaseNow().label;
-    const btn = $('recheck-btn');
-    if (!s.recheckAt || !s.dueouts) { btn.hidden = true; return; }
-    btn.hidden = false;
-    const left = Math.round((s.recheckAt - Date.now()) / 1000);
-    if (left <= 0) {
-      btn.classList.add('due');
-      btn.innerHTML = `<span>Re-check due</span><b>Import</b>`;
-    } else {
-      btn.classList.remove('due');
-      const mm = Math.floor(left / 60), ss = String(left % 60).padStart(2, '0');
-      btn.innerHTML = `<span>Next re-check</span><b>${mm}:${ss}</b>`;
-    }
-    $('theme-btn').textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? 'Day mode' : 'Night mode';
-  }
-
-  // ---------- actions ----------
   function importNow() { go('departures'); $('dep-file').click(); }
-  function act(a) {
-    if (a === 'import') return importNow();
-    if (a.startsWith('go:')) return go(a.slice(3));
-    if (a === 'copy-unprocessed') { const r = CP.unprocessedCheckouts(); return CP.copy(r.join(','), `Copied ${CP.plural(r.length, 'room')}`); }
+
+  function confirm(title, body, yesLabel, onYes) {
+    CP.sheet(`
+      <div class="sheet-head"><div><h2>${title}</h2><p class="meta">${body}</p></div>
+      <button class="icon-btn" data-close type="button" aria-label="Close">✕</button></div>
+      <div class="sheet-actions"><button class="btn primary danger" data-yes type="button">${yesLabel}</button><button class="btn" data-no type="button">Cancel</button></div>`,
+    (el, close) => {
+      el.querySelector('[data-close]').onclick = close;
+      el.querySelector('[data-no]').onclick = close;
+      el.querySelector('[data-yes]').onclick = () => { close(); onYes(); };
+      setTimeout(() => el.querySelector('[data-yes]').focus(), 30);
+    });
   }
 
+  function runAction(id) {
+    if (id === 'import') return importNow();
+    if (id === 'reset-dep') return confirm('Reset departures?',
+      'Clears the imported due-out list, the check history, the comparison and the balance tags. Your cutoff time stays. The checkout log is not touched.',
+      'Reset departures', CP.resetDepartures);
+    if (id === 'reset-co') return confirm('Reset checkouts?',
+      'Clears the screenshot result and today\'s checkout log. Rooms Concierge reported go back onto the physical check list.',
+      'Reset checkouts', CP.resetCheckouts);
+  }
+
+  // ---------- theme / new shift ----------
   function setTheme(t) {
     document.documentElement.setAttribute('data-theme', t);
-    const meta = document.querySelector('meta[name=theme-color]');
-    if (meta) meta.setAttribute('content', t === 'dark' ? '#0B1F25' : '#EDF1F0');
     CP.update(s => { s.theme = t; });
   }
   const toggleTheme = () => setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
 
   function confirmNewShift() {
-    CP.sheet(`
-      <div class="sheet-head"><div><h2>Start a new shift?</h2><p class="meta">Clears the due-out import, checkout log, balance tags and waiting cards on this device. Your cutoff time and theme stay.</p></div>
-      <button class="icon-btn" data-close type="button" aria-label="Close">✕</button></div>
-      <div class="sheet-actions"><button class="btn primary danger" data-yes type="button">Clear and start fresh</button><button class="btn" data-close2 type="button">Keep working</button></div>`,
-    (el, close) => {
-      el.querySelector('[data-close]').onclick = close;
-      el.querySelector('[data-close2]').onclick = close;
-      el.querySelector('[data-yes]').onclick = () => { const cut = CP.state().cutoff; CP.newShift(); CP.update(s => { s.cutoff = cut; }); close(); CP.toast('New shift started'); go('today'); };
-    });
+    confirm('Start a new shift?',
+      'Clears departures, the checkout log, balance tags and waiting cards. Your cutoff time and theme stay.',
+      'Clear and start fresh',
+      () => { const cut = CP.state().cutoff; CP.newShift(); CP.update(s => { s.cutoff = cut; }); CP.toast('New shift started'); go('departures'); });
   }
 
   // ---------- command palette ----------
@@ -174,15 +83,16 @@
       { label: 'Import due-out export', hint: 'Departures', run: importNow },
       { label: 'Copy list for Concierge', hint: `${CP.dep.checkRooms(s).length} rooms`, run: () => { go('departures'); CP.copy(CP.dep.conciergeText(s), 'Concierge list copied'); } },
       { label: 'Copy rooms to check as Opera list', hint: 'Departures', run: () => { const r = CP.sortRooms(CP.dep.checkRooms(s)); CP.copy(r.join(','), `Copied ${CP.plural(r.length, 'room')}`); } },
-      { label: 'Read a checkout screenshot', hint: 'Or just paste it anywhere', run: () => { go('checkouts'); $('ex-drop').focus(); } },
-      { label: 'Copy checkouts to process in Opera', hint: `${CP.unprocessedCheckouts().length} rooms`, run: () => act('copy-unprocessed') },
+      { label: 'Read a checkout screenshot', hint: 'Or just paste it', run: () => { go('checkouts'); $('ex-drop').focus(); } },
+      { label: 'Copy checkouts to process in Opera', hint: `${CP.unprocessedCheckouts().length} rooms`, run: () => { const r = CP.unprocessedCheckouts(); CP.copy(r.join(','), `Copied ${CP.plural(r.length, 'room')}`); } },
+      { label: 'Reset departures', hint: '', run: () => runAction('reset-dep') },
+      { label: 'Reset checkouts', hint: '', run: () => runAction('reset-co') },
       { label: 'New waiting card', hint: 'Waiting cards', run: () => { go('waiting'); setTimeout(() => $('wc-form').querySelector('[name=name]').focus(), 30); } },
       { label: 'Turn any text into an Opera list', hint: 'Room lists', run: () => { go('tools'); setTimeout(() => $('tl-input').focus(), 30); } },
-      { label: 'Go to Today', hint: '1', run: () => go('today') },
-      { label: 'Go to Departures', hint: '2', run: () => go('departures') },
-      { label: 'Go to Checkouts', hint: '3', run: () => go('checkouts') },
-      { label: 'Go to Waiting cards', hint: '4', run: () => go('waiting') },
-      { label: 'Go to Room lists', hint: '5', run: () => go('tools') },
+      { label: 'Go to Departures', hint: '1', run: () => go('departures') },
+      { label: 'Go to Checkouts', hint: '2', run: () => go('checkouts') },
+      { label: 'Go to Waiting cards', hint: '3', run: () => go('waiting') },
+      { label: 'Go to Room lists', hint: '4', run: () => go('tools') },
       { label: document.documentElement.getAttribute('data-theme') === 'dark' ? 'Switch to day mode' : 'Switch to night mode', hint: '', run: toggleTheme },
       { label: 'Start new shift', hint: 'Clears today', run: confirmNewShift }
     ];
@@ -218,23 +128,25 @@
   }
   CP.openPalette = openPalette;
 
-  // ---------- render loop ----------
+  // ---------- clock + render loop ----------
+  function renderClock() {
+    const d = new Date();
+    $('clock').innerHTML = `<span class="clock-time">${CP.nowHHMM()}</span><span class="clock-date">${d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</span>`;
+    $('theme-btn').textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? 'Day mode' : 'Night mode';
+  }
+
   function renderAll() {
-    [CP.renderDepartures, CP.renderCheckouts, CP.renderWaiting, CP.renderTools, renderToday, renderTop]
+    [CP.renderDepartures, CP.renderCheckouts, CP.renderWaiting, CP.renderTools, renderClock]
       .forEach(fn => { try { fn && fn(); } catch (e) { console.error(e); } });
   }
 
-  let alerted = null;
+  let lastMinute = -1;
   function tick() {
     const s = CP.state();
     if (s.day !== CP.todayStr()) { CP.newShift(); return; }
-    renderTop();
     if (CP.tickWaiting) CP.tickWaiting();
-    if (s.recheckAt && Date.now() >= s.recheckAt && alerted !== s.recheckAt && s.dueouts) {
-      alerted = s.recheckAt;
-      CP.toast('Time for the next departure re-check');
-      renderToday();
-    }
+    const m = CP.nowMinutes();
+    if (m !== lastMinute) { lastMinute = m; renderClock(); if (CP.renderDepLast) CP.renderDepLast(); }
   }
 
   // ---------- events ----------
@@ -243,18 +155,14 @@
     if (t) document.documentElement.setAttribute('data-theme', t);
 
     document.addEventListener('click', e => {
-      const nav = e.target.closest('[data-view]');
-      if (nav && (nav.classList.contains('nav-btn') || nav.classList.contains('tab'))) { go(nav.dataset.view); return; }
-      const g = e.target.closest('[data-go]');
-      if (g) { go(g.dataset.go); return; }
-      const a = e.target.closest('#feed [data-act]');
-      if (a) { act(a.dataset.act); }
+      const nav = e.target.closest('.nav-btn[data-view]');
+      if (nav) { go(nav.dataset.view); return; }
+      const a = e.target.closest('[data-action]');
+      if (a) runAction(a.dataset.action);
     });
-    $('recheck-btn').addEventListener('click', importNow);
     $('theme-btn').addEventListener('click', toggleTheme);
     $('newshift-btn').addEventListener('click', confirmNewShift);
 
-    // close sheet on backdrop tap
     const dlg = $('sheet');
     dlg.addEventListener('click', e => { if (e.target === dlg) CP.closeSheet(); });
 
@@ -295,10 +203,9 @@
     });
 
     CP.onChange(renderAll);
-    go((location.hash || '#today').slice(1), { keepScroll: true });
+    go((location.hash || '#departures').slice(1));
     renderAll();
     setInterval(tick, 1000);
-    setInterval(renderToday, 30000);
   }
 
   document.addEventListener('DOMContentLoaded', bind);

@@ -135,7 +135,7 @@
         newly: CP.sortRooms(after.filter(r => !before.includes(r))),
         pending: after.filter(r => before.includes(r)).length
       } : null;
-      st.recheckAt = Date.now() + 30 * 60000;
+      st.checks = (st.checks || []).concat(Date.now());
     });
   }
 
@@ -145,7 +145,7 @@
       const rows = await parseFile(file);
       if (!rows.length) throw new Error('empty');
       importRows(rows, file.name);
-      CP.toast(`Imported ${rows.length} due-outs. Re-check timer set for 30 min.`);
+      CP.toast(`Imported ${rows.length} due-outs`);
     } catch (e) {
       console.error(e);
       CP.toast('That file has no due-out table. Export it from Opera again and drop it here unedited.');
@@ -160,13 +160,14 @@
     const cutoff = $('cutoff');
     if (document.activeElement !== cutoff) cutoff.value = s.cutoff || '';
 
+    renderLast();
     if (!s.dueouts) {
       meta.textContent = 'Use the .xls exactly as Opera gives it.';
       body.innerHTML = '';
       $('dep-table-panel').hidden = true;
       return;
     }
-    meta.textContent = `${s.dueouts.fileName || 'Export'} with ${s.dueouts.rows.length} rows, imported ${CP.ago(s.dueouts.importedAt)}. Drop a newer one to compare.`;
+    meta.textContent = `${s.dueouts.fileName || 'Export'}, ${s.dueouts.rows.length} rows. Drop a newer export to run the next check.`;
 
     const rows = activeRows(s);
     const counts = { check: 0, cleared: 0, ext: 0, later: 0 };
@@ -216,16 +217,18 @@
       </div>
       <div class="chips" role="tablist">${filters.map(([k, l, n]) =>
         `<button class="chip ${rackFilter === k ? 'on' : ''}" data-rack="${k}" type="button">${l}<b>${n}</b></button>`).join('')}</div>
-      ${show.length ? CP.BUILDING_ORDER.filter(b => g[b]).map(b => `
-        <div class="rack-group">
-          <h3 class="bld-name">${b}<span>${g[b].length}</span></h3>
-          <div class="tiles">${CP.sortRooms(g[b].map(r => r.room)).map(room => {
-            const r = g[b].find(x => x.room === room);
+      <div class="rack-cols">${CP.BUILDINGS.map(bd => bd.name).concat(g.Other ? ['Other'] : []).map(b => {
+        const list = g[b] || [];
+        return `<div class="rack-col">
+          <h3 class="bld-name">${b}<span>${list.length}</span></h3>
+          ${list.length ? `<div class="tiles">${CP.sortRooms(list.map(r => r.room)).map(room => {
+            const r = list.find(x => x.room === room);
             const st = CP.roomStatus(r, s);
-            const sub = st === 'co' ? 'Checked out' : (CP.ETD_CODES[r.etd] || r.etd || 'No time');
+            const sub = st === 'co' ? 'Checked out' : (CP.ETD_CODES[r.etd] || '');
             return CP.tile(room, 's-' + st + (r.vip || r.memberLevel ? ' vip' : ''), sub);
-          }).join('')}</div>
-        </div>`).join('') : `<p class="empty">Nothing in this group right now.</p>`}
+          }).join('')}</div>` : `<p class="empty">Clear</p>`}
+        </div>`;
+      }).join('')}</div>
     </div>`;
 
     // side lists
@@ -372,6 +375,32 @@
     $('dep-search').addEventListener('input', renderTable);
     $('dep-table').addEventListener('click', e => { const tr = e.target.closest('tr[data-room]'); if (tr) CP.openRoom(tr.dataset.room); });
   }
+
+  function renderLast() {
+    const s = CP.state();
+    const el = $('dep-last');
+    if (!el) return;
+    if (!s.dueouts) {
+      el.innerHTML = `<span class="lc-label">Last checked</span><span class="lc-time idle">--:--</span><span class="lc-ago">No export yet today</span>`;
+      return;
+    }
+    const at = s.dueouts.importedAt;
+    const hhmm = (ts) => { const d = new Date(ts); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+    const mins = Math.floor((Date.now() - at) / 60000);
+    const checks = s.checks || [];
+    el.innerHTML = `<span class="lc-label">Last checked</span>
+      <span class="lc-time ${mins >= 30 ? 'stale' : ''}">${hhmm(at)}</span>
+      <span class="lc-ago">${CP.ago(at)}</span>
+      ${checks.length > 1 ? `<span class="lc-history">Checks today: ${checks.map(hhmm).join(', ')}</span>` : ''}`;
+  }
+  CP.renderDepLast = renderLast;
+
+  CP.resetDepartures = () => {
+    rackFilter = 'check';
+    $('dep-search').value = '';
+    CP.update(s => { s.dueouts = null; s.diff = null; s.tags = {}; s.checks = []; });
+    CP.toast('Departures reset');
+  };
 
   CP.renderDepartures = render;
   document.addEventListener('DOMContentLoaded', bind);

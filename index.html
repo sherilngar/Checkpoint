@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/app.css?v=22">
+<link rel="stylesheet" href="css/app.css?v=24">
 <script>
   // set theme before paint to avoid a flash
   (function () {
@@ -34,11 +34,10 @@
       </div>
     </div>
     <nav class="nav" aria-label="Sections">
-      <button class="nav-btn" data-view="today"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg><span>Today</span><kbd>1</kbd></button>
-      <button class="nav-btn" data-view="departures"><svg viewBox="0 0 24 24"><path d="M14 4h5v16h-5"/><path d="M10 8l-4 4 4 4M6 12h10"/></svg><span>Departures</span><kbd>2</kbd></button>
-      <button class="nav-btn" data-view="checkouts"><svg viewBox="0 0 24 24"><path d="M5 5h14v10H9l-4 4z"/><path d="M9 10l2 2 4-4"/></svg><span>Checkouts</span><kbd>3</kbd></button>
-      <button class="nav-btn" data-view="waiting"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="2"/><path d="M8 10h5M8 14h8"/></svg><span>Waiting cards</span><kbd>4</kbd></button>
-      <button class="nav-btn" data-view="tools"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h9"/></svg><span>Room lists</span><kbd>5</kbd></button>
+      <button class="nav-btn" data-view="departures"><svg viewBox="0 0 24 24"><path d="M14 4h5v16h-5"/><path d="M10 8l-4 4 4 4M6 12h10"/></svg><span>Departures</span><kbd>1</kbd></button>
+      <button class="nav-btn" data-view="checkouts"><svg viewBox="0 0 24 24"><path d="M5 5h14v10H9l-4 4z"/><path d="M9 10l2 2 4-4"/></svg><span>Checkouts</span><kbd>2</kbd></button>
+      <button class="nav-btn" data-view="waiting"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="2"/><path d="M8 10h5M8 14h8"/></svg><span>Waiting cards</span><kbd>3</kbd></button>
+      <button class="nav-btn" data-view="tools"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h9"/></svg><span>Room lists</span><kbd>4</kbd></button>
     </nav>
     <div class="rail-foot">
       <button class="rail-link" id="theme-btn" type="button">Night mode</button>
@@ -49,33 +48,18 @@
   <div class="main">
     <header class="topbar">
       <div class="topbar-title">
-        <h1 id="view-title">Today</h1>
-        <p class="phase" id="phase"></p>
+        <h1 id="view-title">Departures</h1>
       </div>
       <div class="topbar-right">
-        <button class="recheck" id="recheck-btn" type="button"></button>
+        <div class="view-actions" id="view-actions"></div>
         <div class="clock" id="clock" aria-label="Current time"></div>
       </div>
     </header>
 
-    <!-- TODAY -->
-    <section class="view" id="view-today" data-title="Today">
-      <div class="board" id="board"></div>
-      <div class="split">
-        <div class="panel">
-          <div class="panel-head"><h2>Needs attention</h2></div>
-          <ul class="feed" id="feed"></ul>
-        </div>
-        <div class="panel">
-          <div class="panel-head"><h2>Shift rhythm</h2></div>
-          <ol class="rhythm" id="rhythm"></ol>
-        </div>
-      </div>
-    </section>
-
     <!-- DEPARTURES -->
     <section class="view" id="view-departures" data-title="Departures">
       <div class="panel import-panel">
+        <div class="last-checked" id="dep-last"></div>
         <div class="drop" id="dep-drop">
           <div>
             <p class="drop-main">Drop the Opera due-out export here, or <button class="inline-btn" id="dep-browse" type="button">choose the file</button></p>
@@ -161,24 +145,16 @@
       </div>
     </section>
   </div>
-
-  <nav class="tabbar" aria-label="Sections">
-    <button class="tab" data-view="today"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg><span>Today</span></button>
-    <button class="tab" data-view="departures"><svg viewBox="0 0 24 24"><path d="M14 4h5v16h-5"/><path d="M10 8l-4 4 4 4M6 12h10"/></svg><span>Departures</span></button>
-    <button class="tab" data-view="checkouts"><svg viewBox="0 0 24 24"><path d="M5 5h14v10H9l-4 4z"/><path d="M9 10l2 2 4-4"/></svg><span>Checkouts</span></button>
-    <button class="tab" data-view="waiting"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="2"/><path d="M8 10h5M8 14h8"/></svg><span>Waiting</span></button>
-    <button class="tab" data-view="tools"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h9"/></svg><span>Lists</span></button>
-  </nav>
 </div>
 
 <dialog id="sheet"><div id="sheet-body"></div></dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/store.js?v=22" defer></script>
-<script src="js/departures.js?v=22" defer></script>
-<script src="js/checkouts.js?v=22" defer></script>
-<script src="js/waiting.js?v=22" defer></script>
-<script src="js/tools.js?v=22" defer></script>
-<script src="js/app.js?v=22" defer></script>
+<script src="js/store.js?v=24" defer></script>
+<script src="js/departures.js?v=24" defer></script>
+<script src="js/checkouts.js?v=24" defer></script>
+<script src="js/waiting.js?v=24" defer></script>
+<script src="js/tools.js?v=24" defer></script>
+<script src="js/app.js?v=24" defer></script>
 </body>
 </html>
