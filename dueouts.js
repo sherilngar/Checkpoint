@@ -61,9 +61,11 @@ function parseOperaTable(htmlText) {
   return data;
 }
 
+const BUILDING_NAMES = { '1': 'Zumroud', '2': 'Amwaj', '3': 'Marmar' };
 function buildingLabel(room) {
   const lead = room.trim()[0];
-  return lead ? `Building ${lead}xxx` : 'Unknown';
+  if (!lead) return 'Unknown';
+  return BUILDING_NAMES[lead] || `Building ${lead}xxx`;
 }
 
 function renderConciergeList(rows) {
@@ -86,10 +88,18 @@ function renderConciergeList(rows) {
     const b = buildingLabel(r['Room']);
     (groups[b] = groups[b] || []).push(r);
   });
-  Object.values(groups).forEach(g => g.sort((a, b) => (timeToMinutes(a['ETD']) ?? 9999) - (timeToMinutes(b['ETD']) ?? 9999)));
+  Object.values(groups).forEach(g => g.sort((a, b) => a['Room'].localeCompare(b['Room'], undefined, { numeric: true })));
 
-  const buildingKeys = Object.keys(groups).sort();
-  let text = '';
+  const buildingOrder = ['Zumroud', 'Amwaj', 'Marmar'];
+  const buildingKeys = Object.keys(groups).sort((a, b) => {
+    const ia = buildingOrder.indexOf(a), ib = buildingOrder.indexOf(b);
+    if (ia === -1 && ib === -1) return a.localeCompare(b);
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+  let text = `Total physical checks: ${eligible.length}\n`;
+  text += buildingKeys.map(b => `${b}: ${groups[b].length}`).join(' · ') + '\n\n';
   buildingKeys.forEach(b => {
     text += `${b}\n`;
     groups[b].forEach(r => {
