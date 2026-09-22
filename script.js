@@ -21,6 +21,10 @@ const roomCountEl = document.getElementById('room-count');
 const operaFormatEl = document.getElementById('opera-format');
 const copyBtn = document.getElementById('copy-btn');
 const rawMatchesEl = document.getElementById('raw-matches');
+const browseBtn = document.getElementById('browse-btn');
+const browseInput = document.getElementById('browse-input');
+const totalRoomsBox = document.getElementById('total-rooms-box');
+const totalRoomsNumber = document.getElementById('total-rooms-number');
 
 let lastRawMatches = []; // room numbers in first-seen order, with duplicates
 
@@ -45,6 +49,7 @@ function renderResults(matches) {
     roomCountEl.textContent = 'No room numbers found — try pasting the raw text instead, or check the screenshot is clear.';
     operaFormatEl.value = '';
     rawMatchesEl.textContent = '';
+    totalRoomsBox.style.display = 'none';
     return;
   }
 
@@ -58,6 +63,9 @@ function renderResults(matches) {
   resultsBox.style.display = 'block';
   roomCountEl.textContent = `${list.length} room${list.length === 1 ? '' : 's'}${dedupe && matches.length !== list.length ? ` (${matches.length - list.length} duplicate${matches.length - list.length === 1 ? '' : 's'} removed)` : ''}`;
   operaFormatEl.value = list.join(',');
+
+  totalRoomsBox.style.display = 'flex';
+  totalRoomsNumber.textContent = list.length;
 
   // Show duplicates explicitly if dedupe is off or if there were any, so nothing gets silently hidden
   const counts = {};
@@ -122,7 +130,47 @@ dropzone.addEventListener('paste', (e) => {
   }
 });
 
-dropzone.addEventListener('click', () => dropzone.focus());
+dropzone.addEventListener('click', (e) => {
+  if (e.target === browseBtn) return; // let the browse button handle its own click
+  dropzone.focus();
+});
+
+browseBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  browseInput.click();
+});
+
+browseInput.addEventListener('change', () => {
+  const file = browseInput.files[0];
+  if (file) handlePastedImage(file);
+});
+
+['dragover', 'dragenter'].forEach(evt => {
+  dropzone.addEventListener(evt, (e) => {
+    e.preventDefault();
+    dropzone.classList.add('dragover');
+  });
+});
+['dragleave', 'dragend'].forEach(evt => {
+  dropzone.addEventListener(evt, (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('dragover');
+  });
+});
+dropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  const files = e.dataTransfer.files;
+  if (files && files.length > 0 && files[0].type.indexOf('image') === 0) {
+    handlePastedImage(files[0]);
+    return;
+  }
+  const text = e.dataTransfer.getData('text');
+  if (text) {
+    rawTextInput.value = text;
+    renderResults(extractRooms(text));
+  }
+});
 
 copyBtn.addEventListener('click', () => {
   operaFormatEl.select();
