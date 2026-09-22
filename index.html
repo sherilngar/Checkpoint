@@ -2,122 +2,183 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F2830">
 <title>Checkpoint</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛎️</text></svg>">
-<link rel="stylesheet" href="style.css?v=9">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="css/app.css?v=22">
+<script>
+  // set theme before paint to avoid a flash
+  (function () {
+    try {
+      var s = JSON.parse(localStorage.getItem('checkpoint_v2') || '{}');
+      var t = s.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', t);
+    } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+  })();
+</script>
 </head>
 <body>
-<header>
-  <h1>Checkpoint</h1>
-  <p class="tagline">Rooms Controller toolkit</p>
-</header>
+<div class="shell">
 
-<nav id="tabs">
-  <button class="tab-btn active" data-tab="extractor">Checkout Extractor</button>
-  <button class="tab-btn" data-tab="dueouts">Due-Outs</button>
-</nav>
-
-<main>
-
-  <!-- CHECKOUT EXTRACTOR -->
-  <section id="extractor" class="tab-panel active">
-    <h2>Checkout Extractor</h2>
-    <p class="hint">Paste a screenshot (Ctrl+V), drag and drop it, or browse for one — or paste copied text from WhatsApp. Room numbers followed by "co", "check out", "checkout" or "vacant" are pulled out automatically.</p>
-
-    <div id="dropzone" tabindex="0">
-      <span id="dropzone-label">Click to paste (Ctrl+V), or drag a screenshot here</span>
-      <button id="browse-btn" type="button">Browse for image</button>
-      <input type="file" id="browse-input" accept="image/*" style="display:none;">
-      <img id="preview-img" style="display:none;">
+  <aside class="rail">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M11 4h10l4 5v16a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9z"/><circle cx="16" cy="10" r="2.2"/></svg>
+      <div>
+        <div class="brand-name">Checkpoint</div>
+        <div class="brand-sub">Rooms control, Rixos Bab Al Bahr</div>
+      </div>
     </div>
-
-    <div id="ocr-status" class="status" style="display:none;"></div>
-
-    <textarea id="raw-text-input" placeholder="…or paste/type raw text here instead"></textarea>
-    <button id="extract-text-btn">Extract from text above</button>
-
-    <div id="total-rooms-box" style="display:none;">
-      <span id="total-rooms-number">0</span>
-      <span class="total-rooms-label">total rooms found (incl. duplicates)</span>
+    <nav class="nav" aria-label="Sections">
+      <button class="nav-btn" data-view="today"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg><span>Today</span><kbd>1</kbd></button>
+      <button class="nav-btn" data-view="departures"><svg viewBox="0 0 24 24"><path d="M14 4h5v16h-5"/><path d="M10 8l-4 4 4 4M6 12h10"/></svg><span>Departures</span><kbd>2</kbd></button>
+      <button class="nav-btn" data-view="checkouts"><svg viewBox="0 0 24 24"><path d="M5 5h14v10H9l-4 4z"/><path d="M9 10l2 2 4-4"/></svg><span>Checkouts</span><kbd>3</kbd></button>
+      <button class="nav-btn" data-view="waiting"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="2"/><path d="M8 10h5M8 14h8"/></svg><span>Waiting cards</span><kbd>4</kbd></button>
+      <button class="nav-btn" data-view="tools"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h9"/></svg><span>Room lists</span><kbd>5</kbd></button>
+    </nav>
+    <div class="rail-foot">
+      <button class="rail-link" id="theme-btn" type="button">Night mode</button>
+      <button class="rail-link" id="newshift-btn" type="button">Start new shift</button>
     </div>
+  </aside>
 
-    <div id="results" style="display:none;">
-      <h3>Extracted rooms</h3>
-      <label class="checkbox-row"><input type="checkbox" id="dedupe-toggle" checked> Remove duplicates</label>
-      <div id="room-count"></div>
-      <textarea id="opera-format" readonly></textarea>
-      <button id="copy-btn">Copy to clipboard</button>
-      <div id="raw-matches"></div>
-    </div>
-  </section>
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-title">
+        <h1 id="view-title">Today</h1>
+        <p class="phase" id="phase"></p>
+      </div>
+      <div class="topbar-right">
+        <button class="recheck" id="recheck-btn" type="button"></button>
+        <div class="clock" id="clock" aria-label="Current time"></div>
+      </div>
+    </header>
 
-  <!-- DUE-OUTS -->
-  <section id="dueouts" class="tab-panel">
-    <h2>Due-Outs</h2>
-    <p class="hint">Import the Opera due-out export (the .xls file). Gives you the Concierge physical-check list (building-sorted, excludes 12:05 "left" and 12:06 "extension"), plus balance flags.</p>
-
-    <label id="file-label" for="dueout-file">Choose due-out export file</label>
-    <input type="file" id="dueout-file" accept=".xls,.xlsx,.htm,.html,.csv">
-
-    <div class="cutoff-row">
-      <label for="cutoff-time">Physical check cutoff — include departures <em>before</em> this time</label>
-      <input type="text" id="cutoff-time" inputmode="numeric" placeholder="12:04" maxlength="5">
-    </div>
-
-    <div id="dueout-status" class="status" style="display:none;"></div>
-
-    <div id="dueout-results" style="display:none;">
-
-      <div class="section-block">
-        <h3>Since last import <span id="diff-timestamp" class="count-badge"></span></h3>
-        <div id="diff-first-time" class="hint" style="display:none;">This is your first import — nothing to compare yet. Import again later (e.g. your next ~30-min check) to see what changed.</div>
-        <div id="diff-content" style="display:none;">
-          <div class="diff-row diff-resolved">
-            <strong id="diff-resolved-count">0</strong> resolved since last check
-            <div id="diff-resolved-list" class="diff-rooms"></div>
-          </div>
-          <div class="diff-row diff-new">
-            <strong id="diff-new-count">0</strong> newly need checking
-            <div id="diff-new-list" class="diff-rooms"></div>
-          </div>
-          <div class="diff-row diff-pending">
-            <strong id="diff-pending-count">0</strong> still pending from last check
-          </div>
+    <!-- TODAY -->
+    <section class="view" id="view-today" data-title="Today">
+      <div class="board" id="board"></div>
+      <div class="split">
+        <div class="panel">
+          <div class="panel-head"><h2>Needs attention</h2></div>
+          <ul class="feed" id="feed"></ul>
         </div>
-        <button id="reset-diff-btn" type="button">Reset comparison (start of shift)</button>
+        <div class="panel">
+          <div class="panel-head"><h2>Shift rhythm</h2></div>
+          <ol class="rhythm" id="rhythm"></ol>
+        </div>
       </div>
+    </section>
 
-      <div class="section-block">
-        <h3>Concierge check list <span class="count-badge" id="concierge-count"></span></h3>
-        <p class="hint">Rooms with a departure time before your cutoff (blank ETDs always included; 12:05 "left" and 12:06 "extension" always excluded) — total + per-building breakdown, grouped by building, sorted ascending by room number within each.</p>
-        <textarea id="concierge-list" readonly></textarea>
-        <button id="copy-concierge-btn">Copy list</button>
+    <!-- DEPARTURES -->
+    <section class="view" id="view-departures" data-title="Departures">
+      <div class="panel import-panel">
+        <div class="drop" id="dep-drop">
+          <div>
+            <p class="drop-main">Drop the Opera due-out export here, or <button class="inline-btn" id="dep-browse" type="button">choose the file</button></p>
+            <p class="drop-meta" id="dep-meta">Use the .xls exactly as Opera gives it.</p>
+          </div>
+          <input type="file" id="dep-file" accept=".xls,.xlsx,.csv,.htm,.html" hidden>
+        </div>
+        <div class="cutoff">
+          <label for="cutoff">Physical check for departures before</label>
+          <div class="cutoff-row">
+            <input id="cutoff" class="time-input" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="12:04">
+            <button class="chip" data-cut="12:04" type="button">12:04</button>
+            <button class="chip" data-cut="now" type="button">Now</button>
+            <button class="chip" data-cut="+30" type="button">+30 min</button>
+          </div>
+          <p class="fine">Blank departure times are always included. 12:05 (left) and 12:06 (extension) never are. Rooms Concierge already reported as checked out drop off automatically.</p>
+        </div>
       </div>
-
-      <div class="section-block">
-        <h3>Balance flags <span class="count-badge" id="balance-count"></span></h3>
-        <p class="hint">Non-zero balances on due-outs. Type (VCC / city ledger / high balance) isn't in this export, so review each — this just flags who to check.</p>
-        <div id="balance-list"></div>
+      <div id="dep-body"></div>
+      <div class="panel" id="dep-table-panel" hidden>
+        <div class="panel-head">
+          <h2>All due-outs</h2>
+          <input id="dep-search" class="search" type="search" placeholder="Search room, guest or agent" autocomplete="off">
+        </div>
+        <div class="table-wrap"><table class="table" id="dep-table"></table></div>
       </div>
+    </section>
 
-      <div class="section-block">
-        <h3>Full due-out list <span class="count-badge" id="full-count"></span></h3>
-        <div id="excluded-note" class="hint"></div>
-        <div id="full-table-wrap"><table id="full-table"></table></div>
+    <!-- CHECKOUTS -->
+    <section class="view" id="view-checkouts" data-title="Checkouts">
+      <div class="split">
+        <div class="panel">
+          <div class="panel-head"><h2>Read a screenshot</h2></div>
+          <div class="drop drop-tall" id="ex-drop" tabindex="0">
+            <div class="drop-inner" id="ex-drop-inner">
+              <p class="drop-main">Paste a WhatsApp screenshot anywhere on this page, drag it here, or <button class="inline-btn" id="ex-browse" type="button">choose an image</button></p>
+              <p class="drop-meta">Reads "co", "c/o", "check out", "checkout", "checked out" and "vacant", including lists like "1141, 1414 co".</p>
+            </div>
+            <img id="ex-preview" alt="Pasted screenshot" hidden>
+            <input type="file" id="ex-file" accept="image/*" hidden>
+          </div>
+          <p class="status" id="ex-status" hidden></p>
+          <details class="text-mode">
+            <summary>Paste text instead (always exact)</summary>
+            <textarea id="ex-text" rows="6" placeholder="Paste messages copied from WhatsApp"></textarea>
+            <button class="btn" id="ex-text-btn" type="button">Read text</button>
+          </details>
+        </div>
+        <div class="panel" id="ex-result"></div>
       </div>
+      <div class="panel" id="ex-today"></div>
+    </section>
 
-    </div>
-  </section>
+    <!-- WAITING CARDS -->
+    <section class="view" id="view-waiting" data-title="Waiting cards">
+      <form class="panel wc-form" id="wc-form" autocomplete="off">
+        <div class="panel-head"><h2>New waiting card</h2></div>
+        <div class="form-grid">
+          <label class="f-name">Guest name<input name="name" required></label>
+          <label>Confirmation<input name="conf" inputmode="numeric"></label>
+          <label>Pax<input name="pax" placeholder="2+1"></label>
+          <label>Arrived at<input name="eta" inputmode="numeric" maxlength="5" placeholder="now"></label>
+          <label>Room<input name="room" inputmode="numeric" maxlength="4" placeholder="optional"></label>
+          <label class="f-wide">Preferences<input name="prefs" placeholder="High floor, sea view, twin beds"></label>
+        </div>
+        <div class="form-foot">
+          <button class="btn primary" type="submit">Add card</button>
+          <span class="fine">Cards stay on this device only.</span>
+        </div>
+      </form>
+      <div id="wc-board"></div>
+    </section>
 
-</main>
+    <!-- ROOM LISTS -->
+    <section class="view" id="view-tools" data-title="Room lists">
+      <div class="split">
+        <div class="panel">
+          <div class="panel-head"><h2>Any text to Opera format</h2></div>
+          <textarea id="tl-input" rows="10" placeholder="Paste anything with room numbers: emails, HK lists, notes. Times like 12:05 are ignored."></textarea>
+          <label class="check-row"><input type="checkbox" id="tl-dedupe" checked> Remove duplicates</label>
+        </div>
+        <div class="panel" id="tl-out"></div>
+      </div>
+    </section>
+  </div>
 
-<footer>
-  <p>Personal tool · runs entirely in your browser · nothing is uploaded anywhere</p>
-</footer>
+  <nav class="tabbar" aria-label="Sections">
+    <button class="tab" data-view="today"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg><span>Today</span></button>
+    <button class="tab" data-view="departures"><svg viewBox="0 0 24 24"><path d="M14 4h5v16h-5"/><path d="M10 8l-4 4 4 4M6 12h10"/></svg><span>Departures</span></button>
+    <button class="tab" data-view="checkouts"><svg viewBox="0 0 24 24"><path d="M5 5h14v10H9l-4 4z"/><path d="M9 10l2 2 4-4"/></svg><span>Checkouts</span></button>
+    <button class="tab" data-view="waiting"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="2"/><path d="M8 10h5M8 14h8"/></svg><span>Waiting</span></button>
+    <button class="tab" data-view="tools"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h9"/></svg><span>Lists</span></button>
+  </nav>
+</div>
 
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script src="script.js?v=9"></script>
-<script src="dueouts.js?v=9"></script>
+<dialog id="sheet"><div id="sheet-body"></div></dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="js/store.js?v=22" defer></script>
+<script src="js/departures.js?v=22" defer></script>
+<script src="js/checkouts.js?v=22" defer></script>
+<script src="js/waiting.js?v=22" defer></script>
+<script src="js/tools.js?v=22" defer></script>
+<script src="js/app.js?v=22" defer></script>
 </body>
 </html>
