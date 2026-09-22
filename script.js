@@ -65,7 +65,7 @@ function renderResults(matches) {
   operaFormatEl.value = list.join(',');
 
   totalRoomsBox.style.display = 'flex';
-  totalRoomsNumber.textContent = list.length;
+  totalRoomsNumber.textContent = matches.length;
 
   // Show duplicates explicitly if dedupe is off or if there were any, so nothing gets silently hidden
   const counts = {};
@@ -86,15 +86,49 @@ extractTextBtn.addEventListener('click', () => {
   renderResults(extractRooms(text));
 });
 
+function preprocessImage(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const scale = 2; // upscale small chat text for better OCR
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const d = imageData.data;
+      for (let i = 0; i < d.length; i += 4) {
+        // grayscale then invert: dark-mode chats are light text on dark bg,
+        // Tesseract reads black-on-white far more reliably
+        const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+        const inverted = 255 - gray;
+        d[i] = d[i + 1] = d[i + 2] = inverted;
+      }
+      ctx.putImageData(imageData, 0, 0);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
 async function runOCR(imageSource) {
   ocrStatus.style.display = 'block';
-  ocrStatus.textContent = 'Reading screenshot…';
+  ocrStatus.textContent = 'Preparing image…';
   try {
-    const { data: { text } } = await Tesseract.recognize(imageSource, 'eng');
+    const processed = await preprocessImage(imageSource);
+    ocrStatus.textContent = 'Reading screenshot…';
+    const { data: { text } } = await Tesseract.recognize(processed, 'eng', {
+      tessedit_pageseg_mode: '6', // assume a uniform block of text — suits chat screenshots
+    });
     ocrStatus.textContent = 'Done reading. Extracting room numbers…';
     const matches = extractRooms(text);
     renderResults(matches);
-    ocrStatus.textContent = `OCR complete. If a number looks wrong, paste the exact text below instead for 100% accuracy.`;
+    ocrStatus.textContent = `OCR complete — always worth a quick count-check against the screenshot. Paste the exact text below instead for 100% accuracy.`;
   } catch (err) {
     ocrStatus.textContent = 'OCR failed — try pasting the text directly below instead.';
     console.error(err);
