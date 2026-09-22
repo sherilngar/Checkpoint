@@ -53,13 +53,18 @@
     <label id="file-label" for="dueout-file">Choose due-out export file</label>
     <input type="file" id="dueout-file" accept=".xls,.xlsx,.htm,.html,.csv">
 
+    <div class="cutoff-row">
+      <label for="cutoff-time">Physical check cutoff — include departures <em>before</em> this time</label>
+      <input type="time" id="cutoff-time" step="60">
+    </div>
+
     <div id="dueout-status" class="status" style="display:none;"></div>
 
     <div id="dueout-results" style="display:none;">
 
       <div class="section-block">
         <h3>Concierge check list <span class="count-badge" id="concierge-count"></span></h3>
-        <p class="hint">Rooms with ETD at or before 12:04 (excludes 12:05 left / 12:06 extension) — ready to send, grouped by building.</p>
+        <p class="hint">Rooms with a departure time before your cutoff (blank ETDs always included; 12:05 "left" and 12:06 "extension" always excluded) — grouped by building.</p>
         <textarea id="concierge-list" readonly></textarea>
         <button id="copy-concierge-btn">Copy list</button>
       </div>

@@ -11,8 +11,12 @@ const fullCountEl = document.getElementById('full-count');
 const excludedNoteEl = document.getElementById('excluded-note');
 const fullTable = document.getElementById('full-table');
 
-const CUTOFF_MINUTES = 12 * 60 + 4; // 12:04 — anything after this is excluded from the physical-check list
+const CUTOFF_MINUTES = 12 * 60 + 4; // legacy fallback, unused now that the cutoff is user-entered
 const NON_ROOM_TYPES = new Set(['PM']); // master/day-use placeholder rows, not real rooms to check
+const HARD_EXCLUDE_ETD = new Set(['12:05', '12:06']); // always excluded regardless of cutoff
+
+const cutoffInput = document.getElementById('cutoff-time');
+let currentRows = [];
 
 function timeToMinutes(hhmm) {
   const m = /^(\d{1,2}):(\d{2})$/.exec((hhmm || '').trim());
@@ -63,11 +67,17 @@ function buildingLabel(room) {
 }
 
 function renderConciergeList(rows) {
+  const cutoffMins = timeToMinutes(cutoffInput.value);
+
   const eligible = rows.filter(r => {
     if (NON_ROOM_TYPES.has(r['Room Type'])) return false;
-    const mins = timeToMinutes(r['ETD']);
-    if (mins === null) return true; // no parseable ETD yet — include, flag for manual check
-    return mins <= CUTOFF_MINUTES;
+    const etd = (r['ETD'] || '').trim();
+    if (HARD_EXCLUDE_ETD.has(etd)) return false; // always excluded
+    if (etd === '') return true; // blank ETD — always included
+    const mins = timeToMinutes(etd);
+    if (mins === null) return true; // unparseable — include, worth a manual glance
+    if (cutoffMins === null) return true; // no cutoff set yet — don't filter on time
+    return mins < cutoffMins; // strictly before the cutoff
   });
 
   // group by building, sort by ETD ascending within each building
@@ -144,15 +154,20 @@ dueoutFileInput.addEventListener('change', async (e) => {
       dueoutStatus.textContent = "Couldn't find a table in that file — make sure it's the Opera export as downloaded, unedited.";
       return;
     }
+    currentRows = rows;
     dueoutResults.style.display = 'block';
     dueoutStatus.textContent = `Loaded ${rows.length} due-outs.`;
-    renderConciergeList(rows);
-    renderBalanceFlags(rows);
-    renderFullTable(rows);
+    renderConciergeList(currentRows);
+    renderBalanceFlags(currentRows);
+    renderFullTable(currentRows);
   } catch (err) {
     dueoutStatus.textContent = 'Failed to read that file.';
     console.error(err);
   }
+});
+
+cutoffInput.addEventListener('input', () => {
+  if (currentRows.length) renderConciergeList(currentRows);
 });
 
 copyConciergeBtn.addEventListener('click', () => {
