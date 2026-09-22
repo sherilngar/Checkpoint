@@ -252,6 +252,31 @@ button:active { transform: scale(0.98); }
   font-size: 0.72rem;
 }
 
+.diff-row {
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+.diff-row:last-child { border-bottom: none; }
+.diff-resolved strong { color: var(--good); font-size: 1.1rem; }
+.diff-new strong { color: #ffb454; font-size: 1.1rem; }
+.diff-pending strong { color: var(--muted); font-size: 1.1rem; }
+.diff-rooms {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-top: 0.2rem;
+  word-break: break-word;
+}
+#reset-diff-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.78rem;
+  padding: 0.4rem 0.8rem;
+  margin-top: 0.75rem;
+}
+#diff-first-time { padding: 0.5rem 0; }
+
 #full-table-wrap { overflow-x: auto; }
 #full-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 0.5rem; }
 #full-table th, #full-table td {

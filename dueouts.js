@@ -1,3 +1,71 @@
+// ---------- Since-last-import diff ----------
+const DIFF_KEY = 'checkpoint_dueout_snapshot';
+const diffTimestamp = document.getElementById('diff-timestamp');
+const diffFirstTime = document.getElementById('diff-first-time');
+const diffContent = document.getElementById('diff-content');
+const diffResolvedCount = document.getElementById('diff-resolved-count');
+const diffResolvedList = document.getElementById('diff-resolved-list');
+const diffNewCount = document.getElementById('diff-new-count');
+const diffNewList = document.getElementById('diff-new-list');
+const diffPendingCount = document.getElementById('diff-pending-count');
+const resetDiffBtn = document.getElementById('reset-diff-btn');
+
+function loadSnapshot() {
+  try {
+    const raw = localStorage.getItem(DIFF_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+function saveSnapshot(rooms) {
+  try {
+    localStorage.setItem(DIFF_KEY, JSON.stringify({ rooms, timestamp: Date.now() }));
+  } catch (e) { /* ignore — private browsing etc. */ }
+}
+function formatAgo(ts) {
+  const mins = Math.round((Date.now() - ts) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins === 1) return '1 min ago';
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.round(mins / 60);
+  return `${hrs} hr${hrs === 1 ? '' : 's'} ago`;
+}
+
+function renderDiff(currentEligibleRooms) {
+  const previous = loadSnapshot();
+
+  if (!previous) {
+    diffFirstTime.style.display = 'block';
+    diffContent.style.display = 'none';
+    diffTimestamp.textContent = '';
+  } else {
+    diffFirstTime.style.display = 'none';
+    diffContent.style.display = 'block';
+    diffTimestamp.textContent = `(vs. ${formatAgo(previous.timestamp)})`;
+
+    const prevSet = new Set(previous.rooms);
+    const currSet = new Set(currentEligibleRooms);
+
+    const resolved = previous.rooms.filter(r => !currSet.has(r));
+    const newlyNeeded = currentEligibleRooms.filter(r => !prevSet.has(r));
+    const stillPending = currentEligibleRooms.filter(r => prevSet.has(r));
+
+    diffResolvedCount.textContent = resolved.length;
+    diffResolvedList.textContent = resolved.length ? resolved.sort((a,b)=>a.localeCompare(b, undefined, {numeric:true})).join(', ') : '—';
+    diffNewCount.textContent = newlyNeeded.length;
+    diffNewList.textContent = newlyNeeded.length ? newlyNeeded.sort((a,b)=>a.localeCompare(b, undefined, {numeric:true})).join(', ') : '—';
+    diffPendingCount.textContent = stillPending.length;
+  }
+
+  saveSnapshot(currentEligibleRooms);
+}
+
+resetDiffBtn.addEventListener('click', () => {
+  try { localStorage.removeItem(DIFF_KEY); } catch (e) {}
+  diffFirstTime.style.display = 'block';
+  diffContent.style.display = 'none';
+  diffTimestamp.textContent = '';
+});
+
 // ---------- Due-Outs ----------
 const dueoutFileInput = document.getElementById('dueout-file');
 const dueoutStatus = document.getElementById('dueout-status');
@@ -123,6 +191,8 @@ function renderConciergeList(rows) {
   if (excludedExt) bits.push(`${excludedExt} extension`);
   if (excludedPM) bits.push(`${excludedPM} non-room/master account`);
   excludedNoteEl.textContent = bits.length ? `Excluded from the list above: ${bits.join(', ')}.` : '';
+
+  return eligible.map(r => r['Room']);
 }
 
 function renderBalanceFlags(rows) {
@@ -170,7 +240,8 @@ dueoutFileInput.addEventListener('change', async (e) => {
     currentRows = rows;
     dueoutResults.style.display = 'block';
     dueoutStatus.textContent = `Loaded ${rows.length} due-outs.`;
-    renderConciergeList(currentRows);
+    const eligibleRooms = renderConciergeList(currentRows);
+    renderDiff(eligibleRooms);
     renderBalanceFlags(currentRows);
     renderFullTable(currentRows);
   } catch (err) {

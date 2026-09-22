@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Checkpoint</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛎️</text></svg>">
-<link rel="stylesheet" href="style.css?v=8">
+<link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
 <header>
@@ -70,6 +70,25 @@
     <div id="dueout-results" style="display:none;">
 
       <div class="section-block">
+        <h3>Since last import <span id="diff-timestamp" class="count-badge"></span></h3>
+        <div id="diff-first-time" class="hint" style="display:none;">This is your first import — nothing to compare yet. Import again later (e.g. your next ~30-min check) to see what changed.</div>
+        <div id="diff-content" style="display:none;">
+          <div class="diff-row diff-resolved">
+            <strong id="diff-resolved-count">0</strong> resolved since last check
+            <div id="diff-resolved-list" class="diff-rooms"></div>
+          </div>
+          <div class="diff-row diff-new">
+            <strong id="diff-new-count">0</strong> newly need checking
+            <div id="diff-new-list" class="diff-rooms"></div>
+          </div>
+          <div class="diff-row diff-pending">
+            <strong id="diff-pending-count">0</strong> still pending from last check
+          </div>
+        </div>
+        <button id="reset-diff-btn" type="button">Reset comparison (start of shift)</button>
+      </div>
+
+      <div class="section-block">
         <h3>Concierge check list <span class="count-badge" id="concierge-count"></span></h3>
         <p class="hint">Rooms with a departure time before your cutoff (blank ETDs always included; 12:05 "left" and 12:06 "extension" always excluded) — total + per-building breakdown, grouped by building, sorted ascending by room number within each.</p>
         <textarea id="concierge-list" readonly></textarea>
@@ -98,7 +117,7 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script src="script.js?v=8"></script>
-<script src="dueouts.js?v=8"></script>
+<script src="script.js?v=9"></script>
+<script src="dueouts.js?v=9"></script>
 </body>
 </html>
