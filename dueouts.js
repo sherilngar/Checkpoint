@@ -103,8 +103,7 @@ function renderConciergeList(rows) {
   buildingKeys.forEach(b => {
     text += `${b}\n`;
     groups[b].forEach(r => {
-      const label = codeLabel(r['ETD']);
-      text += `${r['Room']}${label ? '  (' + label + ')' : r['ETD'] ? '  (' + r['ETD'] + ')' : ''}\n`;
+      text += `${r['Room']}\n`;
     });
     text += '\n';
   });
