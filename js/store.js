@@ -15,7 +15,7 @@ window.CP = window.CP || {};
     diff: null,             // { vsAt, resolved, newly, pending }
     co: { reported: {}, processed: {} }, // room -> timestamp
     tags: {},               // conf/room -> balance tag
-    cards: [],              // waiting cards
+    rounds: [],             // each list sent to Concierge: { at, rooms }
     checks: [],             // timestamps of every due-out import today
     theme: null
   });

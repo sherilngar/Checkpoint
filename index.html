@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/app.css?v=24">
+<link rel="stylesheet" href="css/app.css?v=25">
 <script>
   // set theme before paint to avoid a flash
   (function () {
@@ -34,9 +34,9 @@
       </div>
     </div>
     <nav class="nav" aria-label="Sections">
-      <button class="nav-btn" data-view="departures"><svg viewBox="0 0 24 24"><path d="M14 4h5v16h-5"/><path d="M10 8l-4 4 4 4M6 12h10"/></svg><span>Departures</span><kbd>1</kbd></button>
-      <button class="nav-btn" data-view="checkouts"><svg viewBox="0 0 24 24"><path d="M5 5h14v10H9l-4 4z"/><path d="M9 10l2 2 4-4"/></svg><span>Checkouts</span><kbd>2</kbd></button>
-      <button class="nav-btn" data-view="waiting"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="2"/><path d="M8 10h5M8 14h8"/></svg><span>Waiting cards</span><kbd>3</kbd></button>
+      <button class="nav-btn" data-view="departures"><svg viewBox="0 0 24 24"><path d="M14 4h5v16h-5"/><path d="M10 8l-4 4 4 4M6 12h10"/></svg><span>Departures</span><em class="nav-count" data-count="departures"></em><kbd>1</kbd></button>
+      <button class="nav-btn" data-view="checkouts"><svg viewBox="0 0 24 24"><path d="M5 5h14v10H9l-4 4z"/><path d="M9 10l2 2 4-4"/></svg><span>Checkouts</span><em class="nav-count" data-count="checkouts"></em><kbd>2</kbd></button>
+      <button class="nav-btn" data-view="finder"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg><span>Room finder</span><kbd>3</kbd></button>
       <button class="nav-btn" data-view="tools"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h9"/></svg><span>Room lists</span><kbd>4</kbd></button>
     </nav>
     <div class="rail-foot">
@@ -114,23 +114,9 @@
     </section>
 
     <!-- WAITING CARDS -->
-    <section class="view" id="view-waiting" data-title="Waiting cards">
-      <form class="panel wc-form" id="wc-form" autocomplete="off">
-        <div class="panel-head"><h2>New waiting card</h2></div>
-        <div class="form-grid">
-          <label class="f-name">Guest name<input name="name" required></label>
-          <label>Confirmation<input name="conf" inputmode="numeric"></label>
-          <label>Pax<input name="pax" placeholder="2+1"></label>
-          <label>Arrived at<input name="eta" inputmode="numeric" maxlength="5" placeholder="now"></label>
-          <label>Room<input name="room" inputmode="numeric" maxlength="4" placeholder="optional"></label>
-          <label class="f-wide">Preferences<input name="prefs" placeholder="High floor, sea view, twin beds"></label>
-        </div>
-        <div class="form-foot">
-          <button class="btn primary" type="submit">Add card</button>
-          <span class="fine">Cards stay on this device only.</span>
-        </div>
-      </form>
-      <div id="wc-board"></div>
+    <section class="view" id="view-finder" data-title="Room finder" hidden>
+      <div class="panel fd-controls" id="fd-controls"></div>
+      <div id="fd-body"></div>
     </section>
 
     <!-- ROOM LISTS -->
@@ -150,11 +136,11 @@
 <dialog id="sheet"><div id="sheet-body"></div></dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/store.js?v=24" defer></script>
-<script src="js/departures.js?v=24" defer></script>
-<script src="js/checkouts.js?v=24" defer></script>
-<script src="js/waiting.js?v=24" defer></script>
-<script src="js/tools.js?v=24" defer></script>
-<script src="js/app.js?v=24" defer></script>
+<script src="js/store.js?v=25" defer></script>
+<script src="js/departures.js?v=25" defer></script>
+<script src="js/checkouts.js?v=25" defer></script>
+<script src="js/finder.js?v=25" defer></script>
+<script src="js/tools.js?v=25" defer></script>
+<script src="js/app.js?v=25" defer></script>
 </body>
 </html>

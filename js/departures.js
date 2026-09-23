@@ -153,6 +153,20 @@
   }
 
   // ---------- rendering ----------
+  function progressBar(c, total) {
+    if (!total) return '';
+    const seg = (n, cls, label) => n ? `<i class="${cls}" style="flex:${n}" title="${label}: ${n}"></i>` : '';
+    const pct = Math.round(c.cleared / total * 100);
+    return `<div class="progress">
+      <div class="progress-head"><strong>${pct}%</strong><span>of today's ${total} departures cleared</span></div>
+      <div class="progress-bar">${seg(c.cleared, 'p-cleared', 'Cleared')}${seg(c.check, 'p-check', 'To check')}${seg(c.later, 'p-later', 'Not yet')}${seg(c.ext, 'p-ext', 'Extension')}</div>
+      <div class="progress-key">
+        <span class="k-cleared">Cleared ${c.cleared}</span><span class="k-check">To check ${c.check}</span>
+        <span class="k-later">Not yet ${c.later}</span><span class="k-ext">Extension ${c.ext}</span>
+      </div>
+    </div>`;
+  }
+
   function render() {
     const s = CP.state();
     const body = $('dep-body');
@@ -215,12 +229,18 @@
           <button class="btn" data-act="copy-check-opera" type="button">Copy as Opera list</button>
         </div>
       </div>
+      ${progressBar(counts, rows.length)}
       <div class="chips" role="tablist">${filters.map(([k, l, n]) =>
         `<button class="chip ${rackFilter === k ? 'on' : ''}" data-rack="${k}" type="button">${l}<b>${n}</b></button>`).join('')}</div>
       <div class="rack-cols">${CP.BUILDINGS.map(bd => bd.name).concat(g.Other ? ['Other'] : []).map(b => {
         const list = g[b] || [];
+        const all = rows.filter(r => CP.building(r.room) === b);
+        const done = all.filter(r => { const st = CP.roomStatus(r, s); return st === 'co' || st === 'left'; }).length;
+        const pct = all.length ? Math.round(done / all.length * 100) : 0;
         return `<div class="rack-col">
           <h3 class="bld-name">${b}<span>${list.length}</span></h3>
+          <div class="bld-progress" title="${done} of ${all.length} departures cleared"><i style="width:${pct}%"></i></div>
+          <p class="bld-meta">${done} of ${all.length} cleared</p>
           ${list.length ? `<div class="tiles">${CP.sortRooms(list.map(r => r.room)).map(room => {
             const r = list.find(x => x.room === room);
             const st = CP.roomStatus(r, s);
@@ -296,7 +316,6 @@
     const reported = s.co.reported[room];
     const processed = s.co.processed[room];
     const st = r ? CP.roomStatus(r) : null;
-    const cards = s.cards.filter(c => c.room === room && c.status !== 'done');
     const fields = r ? [
       ['Guest', r.name], ['Confirmation', r.conf], ['Departure time', r.etd ? r.etd + (CP.ETD_CODES[r.etd] ? ', ' + CP.ETD_CODES[r.etd] : '') : 'Not given'],
       ['Balance', r.balance], ['VIP', r.vip], ['Membership', [r.memberType, r.memberLevel].filter(Boolean).join(' ')],
@@ -310,7 +329,6 @@
         <button class="icon-btn" data-close type="button" aria-label="Close">✕</button>
       </div>
       ${fields.length ? `<dl class="facts">${fields.map(([k, v]) => `<div><dt>${k}</dt><dd>${CP.esc(v)}</dd></div>`).join('')}</dl>` : ''}
-      ${cards.length ? `<p class="warn-text">Waiting card: ${cards.map(c => CP.esc(c.name)).join(', ')} is assigned to this room.</p>` : ''}
       <div class="sheet-actions">
         ${reported
           ? `<button class="btn" data-a="undo" type="button">Undo checkout</button>
@@ -364,6 +382,19 @@
     $('dep-body').addEventListener('click', e => {
       const rk = e.target.closest('[data-rack]');
       if (rk) { rackFilter = rk.dataset.rack; render(); return; }
+      const act = e.target.closest('[data-act]');
+      if (act) {
+        const s = CP.state();
+        const rooms = CP.sortRooms(checkRooms(s));
+        if (!rooms.length) { CP.toast('Nothing to check right now'); return; }
+        if (act.dataset.act === 'copy-concierge') {
+          CP.copy(conciergeText(s), `Concierge list copied (${rooms.length})`);
+          CP.update(st => { st.rounds = (st.rounds || []).concat({ at: Date.now(), rooms }); });
+        } else if (act.dataset.act === 'copy-check-opera') {
+          CP.copy(rooms.join(','), `Copied ${CP.plural(rooms.length, 'room')}`);
+        }
+        return;
+      }
       const tg = e.target.closest('[data-tag]');
       if (tg) {
         CP.update(s => { const k = tg.dataset.key; if (s.tags[k] === tg.dataset.tag) delete s.tags[k]; else s.tags[k] = tg.dataset.tag; });
@@ -391,14 +422,15 @@
     el.innerHTML = `<span class="lc-label">Last checked</span>
       <span class="lc-time ${mins >= 30 ? 'stale' : ''}">${hhmm(at)}</span>
       <span class="lc-ago">${CP.ago(at)}</span>
-      ${checks.length > 1 ? `<span class="lc-history">Checks today: ${checks.map(hhmm).join(', ')}</span>` : ''}`;
+      ${checks.length > 1 ? `<span class="lc-history">Checks today: ${checks.map(hhmm).join(', ')}</span>` : ''}
+      ${(s.rounds || []).length ? `<span class="lc-history">Sent to Concierge: ${s.rounds.map(r => `${hhmm(r.at)} (${r.rooms.length})`).join(', ')}</span>` : ''}`;
   }
   CP.renderDepLast = renderLast;
 
   CP.resetDepartures = () => {
     rackFilter = 'check';
     $('dep-search').value = '';
-    CP.update(s => { s.dueouts = null; s.diff = null; s.tags = {}; s.checks = []; });
+    CP.update(s => { s.dueouts = null; s.diff = null; s.tags = {}; s.checks = []; s.rounds = []; });
     CP.toast('Departures reset');
   };
 

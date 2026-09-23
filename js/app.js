@@ -1,6 +1,6 @@
 (function (CP) {
   const $ = (id) => document.getElementById(id);
-  const VIEWS = ['departures', 'checkouts', 'waiting', 'tools'];
+  const VIEWS = ['departures', 'checkouts', 'finder', 'tools'];
   let current = 'departures';
 
   // ---------- header actions per tab ----------
@@ -12,7 +12,7 @@
     checkouts: [
       { id: 'reset-co', label: 'Reset checkouts' }
     ],
-    waiting: [],
+    finder: [],
     tools: []
   };
 
@@ -71,7 +71,7 @@
 
   function confirmNewShift() {
     confirm('Start a new shift?',
-      'Clears departures, the checkout log, balance tags and waiting cards. Your cutoff time and theme stay.',
+      'Clears departures, Concierge rounds, the checkout log and balance tags. Your cutoff time and theme stay.',
       'Clear and start fresh',
       () => { const cut = CP.state().cutoff; CP.newShift(); CP.update(s => { s.cutoff = cut; }); CP.toast('New shift started'); go('departures'); });
   }
@@ -87,11 +87,11 @@
       { label: 'Copy checkouts to process in Opera', hint: `${CP.unprocessedCheckouts().length} rooms`, run: () => { const r = CP.unprocessedCheckouts(); CP.copy(r.join(','), `Copied ${CP.plural(r.length, 'room')}`); } },
       { label: 'Reset departures', hint: '', run: () => runAction('reset-dep') },
       { label: 'Reset checkouts', hint: '', run: () => runAction('reset-co') },
-      { label: 'New waiting card', hint: 'Waiting cards', run: () => { go('waiting'); setTimeout(() => $('wc-form').querySelector('[name=name]').focus(), 30); } },
+      { label: 'Find a room for an early arrival', hint: 'Room finder', run: () => go('finder') },
       { label: 'Turn any text into an Opera list', hint: 'Room lists', run: () => { go('tools'); setTimeout(() => $('tl-input').focus(), 30); } },
       { label: 'Go to Departures', hint: '1', run: () => go('departures') },
       { label: 'Go to Checkouts', hint: '2', run: () => go('checkouts') },
-      { label: 'Go to Waiting cards', hint: '3', run: () => go('waiting') },
+      { label: 'Go to Room finder', hint: '3', run: () => go('finder') },
       { label: 'Go to Room lists', hint: '4', run: () => go('tools') },
       { label: document.documentElement.getAttribute('data-theme') === 'dark' ? 'Switch to day mode' : 'Switch to night mode', hint: '', run: toggleTheme },
       { label: 'Start new shift', hint: 'Clears today', run: confirmNewShift }
@@ -128,6 +128,19 @@
   }
   CP.openPalette = openPalette;
 
+  // ---------- sidebar counts ----------
+  function renderNav() {
+    const s = CP.state();
+    const set = (k, n, hot) => {
+      const el = document.querySelector(`[data-count="${k}"]`);
+      if (!el) return;
+      el.textContent = n || '';
+      el.classList.toggle('hot', !!hot);
+    };
+    set('departures', s.dueouts ? CP.dep.checkRooms(s).length : 0, true);
+    set('checkouts', CP.unprocessedCheckouts().length, false);
+  }
+
   // ---------- clock + render loop ----------
   function renderClock() {
     const d = new Date();
@@ -136,7 +149,7 @@
   }
 
   function renderAll() {
-    [CP.renderDepartures, CP.renderCheckouts, CP.renderWaiting, CP.renderTools, renderClock]
+    [CP.renderDepartures, CP.renderCheckouts, CP.renderFinder, CP.renderTools, renderClock, renderNav]
       .forEach(fn => { try { fn && fn(); } catch (e) { console.error(e); } });
   }
 
@@ -144,7 +157,6 @@
   function tick() {
     const s = CP.state();
     if (s.day !== CP.todayStr()) { CP.newShift(); return; }
-    if (CP.tickWaiting) CP.tickWaiting();
     const m = CP.nowMinutes();
     if (m !== lastMinute) { lastMinute = m; renderClock(); if (CP.renderDepLast) CP.renderDepLast(); }
   }
