@@ -1,6 +1,6 @@
 (function (CP) {
   const $ = (id) => document.getElementById(id);
-  const VIEWS = ['departures', 'checkouts', 'finder', 'tools'];
+  const VIEWS = ['departures', 'checkouts', 'finder', 'tools', 'daylist'];
   let current = 'departures';
 
   // ---------- header actions per tab ----------
@@ -13,7 +13,11 @@
       { id: 'reset-co', label: 'Reset checkouts' }
     ],
     finder: [],
-    tools: []
+    tools: [],
+    daylist: [
+      { id: 'import-dl', label: 'Upload PDF', primary: true },
+      { id: 'reset-dl', label: 'Reset day list' }
+    ]
   };
 
   function renderActions() {
@@ -60,6 +64,10 @@
     if (id === 'reset-co') return confirm('Reset checkouts?',
       'Clears the screenshot result and today\'s checkout log. Rooms Concierge reported go back onto the physical check list.',
       'Reset checkouts', CP.resetCheckouts);
+    if (id === 'import-dl') { go('daylist'); $('dl-file').click(); return; }
+    if (id === 'reset-dl') return confirm('Reset the day list?',
+      'Clears today\'s full departures PDF. Checkout validation falls back to the live due-out export only.',
+      'Reset day list', () => { CP.update(s => { s.dayList = null; }); CP.toast('Day list cleared'); });
   }
 
   // ---------- theme / new shift ----------
@@ -71,7 +79,7 @@
 
   function confirmNewShift() {
     confirm('Start a new shift?',
-      'Clears departures, Concierge rounds, the checkout log and balance tags. Your cutoff time and theme stay.',
+      'Clears departures, Concierge rounds, the checkout log, balance tags and the day list. Your cutoff time and theme stay.',
       'Clear and start fresh',
       () => { const cut = CP.state().cutoff; CP.newShift(); CP.update(s => { s.cutoff = cut; }); CP.toast('New shift started'); go('departures'); });
   }
@@ -87,12 +95,14 @@
       { label: 'Copy checkouts to process in Opera', hint: `${CP.unprocessedCheckouts().length} rooms`, run: () => { const r = CP.unprocessedCheckouts(); CP.copy(r.join(','), `Copied ${CP.plural(r.length, 'room')}`); } },
       { label: 'Reset departures', hint: '', run: () => runAction('reset-dep') },
       { label: 'Reset checkouts', hint: '', run: () => runAction('reset-co') },
+      { label: 'Upload full-day departures PDF', hint: 'Day list', run: () => runAction('import-dl') },
       { label: 'Find a room for an early arrival', hint: 'Room finder', run: () => go('finder') },
       { label: 'Turn any text into an Opera list', hint: 'Room lists', run: () => { go('tools'); setTimeout(() => $('tl-input').focus(), 30); } },
       { label: 'Go to Departures', hint: '1', run: () => go('departures') },
       { label: 'Go to Checkouts', hint: '2', run: () => go('checkouts') },
       { label: 'Go to Room finder', hint: '3', run: () => go('finder') },
       { label: 'Go to Room lists', hint: '4', run: () => go('tools') },
+      { label: 'Go to Day list', hint: '5', run: () => go('daylist') },
       { label: document.documentElement.getAttribute('data-theme') === 'dark' ? 'Switch to day mode' : 'Switch to night mode', hint: '', run: toggleTheme },
       { label: 'Start new shift', hint: 'Clears today', run: confirmNewShift }
     ];
@@ -139,6 +149,7 @@
     };
     set('departures', s.dueouts ? CP.dep.checkRooms(s).length : 0, true);
     set('checkouts', CP.unprocessedCheckouts().length, false);
+    set('daylist', s.dayList ? s.dayList.rooms.length : 0, false);
   }
 
   // ---------- clock + render loop ----------
@@ -149,7 +160,7 @@
   }
 
   function renderAll() {
-    [CP.renderDepartures, CP.renderCheckouts, CP.renderFinder, CP.renderTools, renderClock, renderNav]
+    [CP.renderDepartures, CP.renderCheckouts, CP.renderFinder, CP.renderTools, CP.renderDayList, renderClock, renderNav]
       .forEach(fn => { try { fn && fn(); } catch (e) { console.error(e); } });
   }
 
@@ -211,6 +222,7 @@
       const f = e.dataTransfer && e.dataTransfer.files[0];
       if (!f) return;
       if (f.type.startsWith('image')) { go('checkouts'); CP.readCheckoutImage(f); }
+      else if (f.type === 'application/pdf') { go('daylist'); CP.importDayListFile(f); }
       else { go('departures'); CP.dep.importFile(f); }
     });
 

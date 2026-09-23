@@ -17,6 +17,7 @@ window.CP = window.CP || {};
     tags: {},               // conf/room -> balance tag
     rounds: [],             // each list sent to Concierge: { at, rooms }
     checks: [],             // timestamps of every due-out import today
+    dayList: null,          // { rooms, fileName, importedAt } — full-day departures PDF
     theme: null
   });
 
@@ -136,7 +137,9 @@ window.CP = window.CP || {};
   }));
   CP.LIB = {
     ocr: 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js',
-    xlsx: 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'
+    xlsx: 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
+    pdf: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js',
+    pdfWorker: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js'
   };
 
   // ---------- UI helpers ----------

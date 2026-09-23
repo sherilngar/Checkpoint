@@ -463,6 +463,12 @@ input[type=checkbox] { accent-color: var(--brass); width: 16px; height: 16px; }
 .fd-when { grid-area: when; font-size: 12.5px; font-weight: 600; color: var(--muted); white-space: nowrap; }
 .lane-free .fd-when { color: var(--ok); }
 
+/* ============ day list ============ */
+.dl-empty { max-width: 640px; }
+.dl-empty h2 { font: 700 24px/1.15 var(--display); margin-bottom: 8px; }
+.dl-add { display: flex; gap: 8px; margin: 14px 0 4px; max-width: 260px; }
+.dl-add input { text-align: center; font: 700 20px/1 var(--display); }
+
 /* ============ sheet / palette / toast ============ */
 #sheet {
   border: 1px solid var(--line); border-radius: var(--r-lg);

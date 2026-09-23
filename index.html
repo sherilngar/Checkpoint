@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/app.css?v=25">
+<link rel="stylesheet" href="css/app.css?v=26">
 <script>
   // set theme before paint to avoid a flash
   (function () {
@@ -38,6 +38,7 @@
       <button class="nav-btn" data-view="checkouts"><svg viewBox="0 0 24 24"><path d="M5 5h14v10H9l-4 4z"/><path d="M9 10l2 2 4-4"/></svg><span>Checkouts</span><em class="nav-count" data-count="checkouts"></em><kbd>2</kbd></button>
       <button class="nav-btn" data-view="finder"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg><span>Room finder</span><kbd>3</kbd></button>
       <button class="nav-btn" data-view="tools"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h9"/></svg><span>Room lists</span><kbd>4</kbd></button>
+      <button class="nav-btn" data-view="daylist"><svg viewBox="0 0 24 24"><path d="M7 3h8l4 4v14H7z"/><path d="M10 12h7M10 16h7M10 8h3"/></svg><span>Day list</span><em class="nav-count" data-count="daylist"></em><kbd>5</kbd></button>
     </nav>
     <div class="rail-foot">
       <button class="rail-link" id="theme-btn" type="button">Night mode</button>
@@ -130,17 +131,34 @@
         <div class="panel" id="tl-out"></div>
       </div>
     </section>
+
+    <section class="view" id="view-daylist" data-title="Day list" hidden>
+      <div class="panel">
+        <div class="panel-head"><h2>Full-day departures PDF</h2></div>
+        <div class="drop" id="dl-drop">
+          <div>
+            <p class="drop-main">Drop today's full departures PDF here, or <button class="inline-btn" id="dl-browse" type="button">choose the file</button></p>
+            <p class="drop-meta">The report that lists every room departing today, not just what's still outstanding.</p>
+          </div>
+          <input type="file" id="dl-file" accept="application/pdf" hidden>
+        </div>
+        <p class="status" id="dl-status" hidden></p>
+      </div>
+      <div class="panel" id="dl-draft" hidden></div>
+      <div id="dl-body"></div>
+    </section>
   </div>
 </div>
 
 <dialog id="sheet"><div id="sheet-body"></div></dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/store.js?v=25" defer></script>
-<script src="js/departures.js?v=25" defer></script>
-<script src="js/checkouts.js?v=25" defer></script>
-<script src="js/finder.js?v=25" defer></script>
-<script src="js/tools.js?v=25" defer></script>
-<script src="js/app.js?v=25" defer></script>
+<script src="js/store.js?v=26" defer></script>
+<script src="js/departures.js?v=26" defer></script>
+<script src="js/checkouts.js?v=26" defer></script>
+<script src="js/finder.js?v=26" defer></script>
+<script src="js/tools.js?v=26" defer></script>
+<script src="js/daylist.js?v=26" defer></script>
+<script src="js/app.js?v=26" defer></script>
 </body>
 </html>

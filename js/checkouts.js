@@ -120,7 +120,9 @@
       last.found.forEach(r => counts[r] = (counts[r] || 0) + 1);
       const unique = CP.sortRooms(Object.keys(counts));
       const dupes = unique.filter(r => counts[r] > 1);
-      const notDue = s.dueouts ? unique.filter(r => !CP.rowByRoom(r)) : [];
+      const dayRooms = CP.dayListRooms(s);
+      const known = (r) => (s.dueouts && CP.rowByRoom(r)) || (s.dayList && dayRooms.has(r));
+      const notDue = (s.dueouts || s.dayList) ? unique.filter(r => !known(r)) : [];
       const already = unique.filter(r => s.co.reported[r]);
       const fresh = unique.filter(r => !s.co.reported[r] && !notDue.includes(r));
       res.innerHTML = `
@@ -130,7 +132,7 @@
           <div><strong>${unique.length}</strong><span>unique rooms</span></div>
           ${dupes.length ? `<div><strong>${dupes.length}</strong><span>said twice</span></div>` : ''}
         </div>
-        ${notDue.length ? `<p class="warn-text">Not on today's due-out list: ${notDue.join(', ')}. Check for a typo or a misread digit. ${notDue.length === 1 ? 'It is' : 'They are'} left out of the log; tap the tag to log it by hand.</p>` : ''}
+        ${notDue.length ? `<p class="warn-text">Not found in today's departures${s.dayList ? ' (due-out export or full-day list)' : ''}: ${notDue.join(', ')}. Check in Opera — wrong room number, or checking out a different day. ${notDue.length === 1 ? 'It is' : 'They are'} left out of the log; tap the tag to log it by hand.</p>` : ''}
         ${already.length ? `<p class="fine">Already logged: ${already.join(', ')}</p>` : ''}
         <div class="tiles">${unique.map(r => CP.tile(r,
           (notDue.includes(r) ? 's-alert' : s.co.reported[r] ? 's-co' : 's-fresh'),
